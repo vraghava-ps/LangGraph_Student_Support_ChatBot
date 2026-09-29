@@ -9,7 +9,7 @@ START → Classifier → (Database | RAG | API | General) → Answer → END
 | Category | Node | Source |
 |---|---|---|
 | Payment | Database | SQLite `payments` table |
-| Course | RAG | `data/courses.txt` + OpenAI embeddings |
+| Course | RAG | PDF files in `data/` + OpenAI embeddings |
 | API/Service status | API | Live HTTP health checks |
 | General | General | LLM |
 
@@ -50,3 +50,9 @@ python main.py
 - `graph.py`: LangGraph wiring
 - `main.py`: CLI chat loop
 - `init_db.py`: creates and seeds sample data
+- `data/`: PDF documents used by the RAG node
+
+
+## Knowledge base
+Place one or more text-based PDF files in the `data/` folder. The RAG node indexes every PDF
+and cites the file name and page number in its answers.
