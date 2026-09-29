@@ -12,7 +12,15 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
 
-from config import DB_PATH, EMBED_MODEL, LLM_MODEL, PDF_DIR, SERVICES
+from config import (
+    DB_PATH,
+    EMBED_MODEL,
+    INSTITUTE_NAME,
+    INSTITUTE_PROFILE,
+    LLM_MODEL,
+    PDF_DIR,
+    SERVICES,
+)
 from state import ChatState
 
 llm = ChatOpenAI(model=LLM_MODEL, temperature=0)
@@ -27,7 +35,7 @@ class Classification(BaseModel):
     )
 
 
-CLASSIFIER_PROMPT = """You classify student-support questions for PSG IT Solutions into exactly one category.
+CLASSIFIER_PROMPT = f"""You classify student-support questions for {INSTITUTE_NAME} into exactly one category.
 
 Categories:
 
@@ -48,7 +56,8 @@ api_status
   not loading, or working (LMS portal, payment gateway, video streaming).
 
 general
-  Greetings, small talk, and anything that fits none of the above.
+  Greetings, small talk, questions about the institute itself or about this assistant
+  (institute name, who are you, what can you do), and anything that fits none of the above.
 
 Important rules:
 - A question about a POLICY or RULE (for example "What is the refund policy?") is "course",
@@ -65,7 +74,9 @@ Examples:
 - "Has my refund been processed? My ID is STU1002" -> payment
 - "Is the payment gateway down?" -> api_status
 - "LMS is not loading" -> api_status
+- "What is the institute name?" -> general
 - "Hi, who are you?" -> general
+- "What can you help me with?" -> general
 """
 
 classifier_llm = llm.with_structured_output(Classification)
@@ -194,16 +205,19 @@ def api_node(state: ChatState) -> dict:
 # ---------------------------------------------------------------------------
 def general_node(state: ChatState) -> dict:
     return {
-        "context": "This is a general question. No database, document or service data is attached. "
-                   "Answer helpfully and briefly. For account-specific issues, suggest contacting the support team."
+        "context": "About the institute and this assistant:\n"
+                   f"{INSTITUTE_PROFILE}\n\n"
+                   "Answer helpfully and briefly. For account-specific issues or details not listed above, "
+                   "suggest contacting the support team."
     }
 
 
 # ---------------------------------------------------------------------------
 # 6. ANSWER NODE
 # ---------------------------------------------------------------------------
-ANSWER_PROMPT = """You are the friendly student-support assistant for PSG IT Solutions.
-Answer the student's question using ONLY the context provided when it is relevant.
+ANSWER_PROMPT = f"""You are the friendly student-support assistant for {INSTITUTE_NAME}.
+The institute name is always "{INSTITUTE_NAME}". You may state it whenever it is relevant.
+Answer the student's question using the context provided when it is relevant.
 If the context comes from documents, mention the source file and page number at the end, like (Source: file.pdf, page 2).
 If the context does not contain the answer, say so honestly and suggest contacting the support team.
 Keep the answer clear and concise."""
